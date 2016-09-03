@@ -8,6 +8,22 @@
     width: 40px;
 }
 
+.sss-thick-top {
+    border-top: 4px black solid !important;
+}
+
+.sss-thick-bottom {
+    border-bottom: 4px black solid !important;
+}
+
+.sss-thick-left {
+    border-left: 4px black solid !important;
+}
+
+.sss-thick-right {
+    border-right: 4px black solid !important;
+}
+
 .sss-textbox {
     width: 100%;
     height: 100%;
@@ -22,4 +38,18 @@ input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
+}
+
+.sss-label {
+    text-align: center;
+    margin: 25px auto auto auto;
+    display: block;
+}
+
+.sss-button {
+    text-align: center;
+    margin: 5px auto auto auto;
+    display: block;
+
+    font-size: 28px;
 }
