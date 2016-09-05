@@ -62,3 +62,11 @@ input[type='number']::-webkit-outer-spin-button {
     font-size: 28px;
     text-align: center;
 }
+
+.sss-green {
+    color: green;
+}
+
+.sss-red {
+    color: red;
+}
