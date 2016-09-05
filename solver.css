@@ -1,3 +1,10 @@
+.sss-header {
+    font-family: Arial;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .sss-table {
     text-align: center;
     margin: 0 auto;
@@ -30,8 +37,9 @@
 
     border: 1px black solid;
 
-    text-align: center;
+    font-family: Arial;
     font-size: 24px;
+    text-align: center;
 }
 
 input[type='number']::-webkit-inner-spin-button,
@@ -41,15 +49,16 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 .sss-label {
+    font-family: Arial;
     text-align: center;
     margin: 25px auto auto auto;
     display: block;
 }
 
 .sss-button {
-    text-align: center;
     margin: 5px auto auto auto;
     display: block;
 
     font-size: 28px;
+    text-align: center;
 }

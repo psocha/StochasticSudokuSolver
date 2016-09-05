@@ -3,7 +3,12 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     var gridBox = document.getElementById('stochastic-sudoku-solver');
-    gridBox.classList.add('sss-top');
+    gridBox.classList.add('sss-widget');
+
+    var header = document.createElement('h1');
+    header.classList.add('sss-header');
+    header.innerHTML = 'Stochastic Sudoku Solver';
+    gridBox.appendChild(header);
 
     var table = document.createElement('table');
     table.classList.add('sss-table');
@@ -55,5 +60,64 @@ document.addEventListener('DOMContentLoaded', function() {
     gridBox.appendChild(button);
 
 });
+
+function numContradictions(grid) {
+    var contradictions = 0;
+    var occurrences;
+
+    // All rows
+    for (var row = 0; row < 9; row++) {
+        for (var i = 0; i <= 9; i++) {
+            occurrences[i] = 0;
+        }
+        for (var column = 0; column < 9; column++) {
+            var val = grid[row][column];
+            occurrences[val] += 1;
+        }
+        for (var index = 1; index <= 9; index++) {
+            if (occurrences[index] > 1) {
+                contradictions += (occurrences[index] - 1);
+            }
+        }
+    }
+
+    // All columns
+    for (column = 0; column < 9; column++) {
+        for (i = 0; i <= 9; i++) {
+            occurrences[i] = 0;
+        }
+        for (row = 0; row < 9; row++) {
+            val = grid[row][column];
+            occurrences[val] += 1;
+        }
+        for (index = 1; index <= 9; index++) {
+            if (occurrences[index] > 1) {
+                contradictions += (occurrences[index] - 1);
+            }
+        }
+    }
+
+    // All boxes
+    for (var cornerRow = 0; cornerRow < 9; cornerRow += 3) {
+        for (var cornerColumn = 0; cornerColumn < 9; cornerColumn += 3) {
+            for (i = 0; i <= 9; i++) {
+                occurrences[i] = 0;
+            }
+            for (row = 0; row < 3; row++) {
+                for (column = 0; column < 3; column++) {
+                    val = grid[cornerRow + row][cornerColumn + column];
+                    occurrences[val] += 1;
+                }
+            }
+            for (index = 1; index <= 9; index++) {
+                if (occurrences[index] > 1) {
+                    contradictions += (occurrences[index] - 1);
+                }
+            }
+        }
+    }
+
+    return contradictions;
+}
 
 })();
