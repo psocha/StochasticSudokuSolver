@@ -77,11 +77,56 @@ function main() {
             }
         }
     }
-    var contradictions = numContradictions(grid);
-    if (contradictions > 0) {
+    var errors = numContradictions(grid);
+    if (errors > 0) {
         displayError('This sudoku puzzle is unsolvable.');
         setEnabled(true);
         return;
+    }
+
+    initialConfiguration(grid);
+    errors = numContradictions(grid);
+    var swaps = 0;
+    var dirty = false;
+
+    while (true) {
+        if (dirty) {
+            updateDisplay(grid, errors);
+            dirty = false;
+
+            if (errors == 0) {
+                displaySuccess(swaps);
+                break;
+            }
+            if (swaps >= 100000) {
+                displayError('Swap limit reached. Terminating');
+                break;
+            }
+        }
+
+        var randomBox = getRandomInt(0, 8);
+        var cornerRow = Math.floor(randomBox / 3) * 3;
+        var cornerColumn = (randomBox % 3) * 3;
+
+        var randomRow1 = cornerRow + getRandomInt(0, 2);
+        var randomCol1 = cornerColumn + getRandomInt(0, 2);
+
+        var randomRow2 = cornerRow + getRandomInt(0, 2);
+        var randomCol2 = cornerColumn + getRandomInt(0, 2);
+
+        var proposedGrid = copyGrid(grid);
+        var temp = proposedGrid[randomRow1][randomCol1];
+        proposedGrid[randomRow1][randomCol1] = proposedGrid[randomRow2][randomCol2];
+        proposedGrid[randomRow2][randomCol2] = temp;
+
+        var proposedErrors = numContradictions(proposedGrid);
+        var difference = proposedErrors - errors;
+        if (Math.random() < Math.exp(-difference / 10)) {
+            grid = proposedGrid;
+            errors = proposedErrors;
+            swaps += 1;
+            dirty = true;
+        }
     }
 
     setEnabled(true);
@@ -98,7 +143,7 @@ function setEnabled(setting) {
 }
 
 // Display the current state of the sudoku grid on the page.
-function updateGrid(grid, errors) {
+function updateDisplay(grid, errors) {
     for (var row = 0; row < 9; row++) {
         for (var column = 0; column < 9; column++) {
             var cell = document.getElementById('box_' + row.toString() + column.toString());
@@ -125,6 +170,35 @@ function displaySuccess(swaps) {
         label.classList.remove('sss-red');
         label.classList.add('sss-green');
         label.innerHTML = 'Puzzle solved after ' + swaps.toString() + ' swaps.';
+}
+
+// Fill the passed-in grid in a way that satisfies the box property.
+function initialConfiguration(grid) {
+    for (var cornerRow = 0; cornerRow < 9; cornerRow += 3) {
+        for (var cornerColumn = 0; cornerColumn < 9; cornerColumn += 3) {
+            var numbersRemaining = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+            for (var row = 0; row < 3; row++) {
+                for (var column = 0; column < 3; column++) {
+                    var val = grid[cornerRow + row][cornerColumn + column];
+                    if (val > 0) {
+                        var index = numbersRemaining.indexOf(parseInt(val));
+                        numbersRemaining.splice(index, 1);
+                    }
+                }
+            }
+
+            for (row = 0; row < 3; row++) {
+                for (column = 0; column < 3; column++) {
+                    val = grid[cornerRow + row][cornerColumn + column];
+                    if (val == 0) {
+                        grid[cornerRow + row][cornerColumn + column] = numbersRemaining[0];
+                        numbersRemaining.splice(0, 1);
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Calculate the number of errors in a partial or full grid.
@@ -185,6 +259,20 @@ function numContradictions(grid) {
     }
 
     return contradictions;
+}
+
+// Helper function  to draw random integers.
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Helper function to deep-copy a 2d array
+function copyGrid(grid) {
+    var copy = [];
+    for (var i = 0; i < grid.length; i++) {
+        copy[i] = grid[i].slice();
+    }
+    return copy;
 }
 
 })();
