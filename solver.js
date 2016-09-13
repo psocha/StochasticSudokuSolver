@@ -66,14 +66,18 @@ document.addEventListener('DOMContentLoaded', function() {
 function main() {
     setEnabled(false);
     var grid = [];
+    var reserved = [];
     for (var row = 0; row < 9; row++) {
         grid[row] = [];
+        reserved[row] = [];
         for (var column = 0; column < 9; column++) {
             var cellValue = document.getElementById('box_' + row.toString() + column.toString()).value;
             if (cellValue == '') {
                 grid[row][column] = 0;
+                reserved[row][column] = false;
             } else {
                 grid[row][column] = cellValue;
+                reserved[row][column] = true;
             }
         }
     }
@@ -84,13 +88,20 @@ function main() {
         return;
     }
 
+    showReservedCells(true, reserved);
     initialConfiguration(grid);
     errors = numContradictions(grid);
     var swaps = 0;
-    var dirty = false;
+    var dirty = true;
+
+    var better = 0;
+    var equal = 0;
+    var waccepted = 0;
+    var wrejected = 0;
 
     while (true) {
         if (dirty) {
+            console.log('SWAPS ERRORS BETTER EQUAL WACCEPTED WREJECTED: ' + swaps.toString() + ' ' + errors.toString() + ' ' + better.toString() + ' ' + equal.toString() + ' ' + waccepted.toString() + ' ' + wrejected.toString());
             updateDisplay(grid, errors);
             dirty = false;
 
@@ -98,7 +109,7 @@ function main() {
                 displaySuccess(swaps);
                 break;
             }
-            if (swaps >= 100000) {
+            if (swaps >= 25000) {
                 displayError('Swap limit reached. Terminating');
                 break;
             }
@@ -108,11 +119,19 @@ function main() {
         var cornerRow = Math.floor(randomBox / 3) * 3;
         var cornerColumn = (randomBox % 3) * 3;
 
-        var randomRow1 = cornerRow + getRandomInt(0, 2);
-        var randomCol1 = cornerColumn + getRandomInt(0, 2);
+        var firstCellSwappable = false;
+        while (!firstCellSwappable) {
+            var randomRow1 = cornerRow + getRandomInt(0, 2);
+            var randomCol1 = cornerColumn + getRandomInt(0, 2);
+            if (reserved[randomRow1][randomCol1] == false) firstCellSwappable = true;
+        }
 
-        var randomRow2 = cornerRow + getRandomInt(0, 2);
-        var randomCol2 = cornerColumn + getRandomInt(0, 2);
+        var secondCellSwappable = false;
+        while (!secondCellSwappable) {
+            var randomRow2 = cornerRow + getRandomInt(0, 2);
+            var randomCol2 = cornerColumn + getRandomInt(0, 2);
+            if (reserved[randomRow2][randomCol2] == false) secondCellSwappable = true;
+        }
 
         var proposedGrid = copyGrid(grid);
         var temp = proposedGrid[randomRow1][randomCol1];
@@ -121,11 +140,21 @@ function main() {
 
         var proposedErrors = numContradictions(proposedGrid);
         var difference = proposedErrors - errors;
-        if (Math.random() < Math.exp(-difference / 10)) {
+        if (difference < 0) {
+            better += 1;
+        } else if (difference == 0) {
+            equal += 1;
+        }
+        if (Math.random() < Math.exp(-difference / getTemperature(errors))) {
             grid = proposedGrid;
             errors = proposedErrors;
             swaps += 1;
             dirty = true;
+            if (difference > 0) {
+                waccepted += 1;
+            }
+        } else {
+            wrejected += 1;
         }
     }
 
@@ -154,6 +183,20 @@ function updateDisplay(grid, errors) {
     label.classList.remove('sss-green');
     label.classList.remove('sss-red');
     label.innerHTML = 'Errors on grid: ' + errors.toString();
+}
+
+// Highlight cells filled in by the user with a different color.
+function showReservedCells(setting, reserved) {
+    for (var row = 0; row < 9; row++) {
+        for (var column = 0; column < 9; column++) {
+            var cell = document.getElementById('box_' + row.toString() + column.toString());
+            if (setting == true && reserved[row][column] == true) {
+                cell.classList.add('sss-reserved');
+            } else {
+                cell.classList.remove('sss-reserved');
+            }
+        }
+    }
 }
 
 // Notify the user of an unsolvable grid.
@@ -259,6 +302,20 @@ function numContradictions(grid) {
     }
 
     return contradictions;
+}
+
+// Get a simulated annealing temperature for the current # of errors.
+function getTemperature(errors) {
+    if (errors >= 50) {
+        return 2;
+    } else if (errors >= 40) {
+        return 1;
+    } else if (errors >= 20) {
+        return 0.75;
+    } else if (errors >= 10) {
+        return 0.4;
+    }
+    return 0.3;
 }
 
 // Helper function  to draw random integers.
