@@ -59,11 +59,19 @@ input[type='number']::-webkit-outer-spin-button {
     display: block;
 }
 
-.sss-button {
+.sss-solve-button {
     margin: 5px auto auto auto;
     display: block;
 
     font-size: 28px;
+    text-align: center;
+}
+
+.sss-clear-button {
+    margin: 15px auto auto auto;
+    display: block;
+
+    font-size: 16px;
     text-align: center;
 }
 

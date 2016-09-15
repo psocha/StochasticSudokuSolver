@@ -54,11 +54,17 @@ document.addEventListener('DOMContentLoaded', function() {
     label.innerHTML = 'Fill some cells on the grid and then press Solve.';
     gridBox.appendChild(label);
 
-    var button = document.createElement('button');
-    button.classList.add('sss-button');
-    button.innerHTML = 'Solve';
-    button.addEventListener('click', main);
-    gridBox.appendChild(button);
+    var solveButton = document.createElement('button');
+    solveButton.classList.add('sss-solve-button');
+    solveButton.innerHTML = 'Solve';
+    solveButton.addEventListener('click', main);
+    gridBox.appendChild(solveButton);
+
+    var clearButton = document.createElement('button');
+    clearButton.classList.add('sss-clear-button');
+    clearButton.innerHTML = 'Clear';
+    clearButton.addEventListener('click', clear);
+    gridBox.appendChild(clearButton);
 
 });
 
@@ -109,8 +115,8 @@ function main() {
                 displaySuccess(swaps);
                 break;
             }
-            if (swaps >= 25000) {
-                displayError('Swap limit reached. Terminating');
+            if (swaps >= 30000) {
+                displayError('Swap limit reached. Grid still has ' + errors.toString() + ' errors.');
                 break;
             }
         }
@@ -161,14 +167,34 @@ function main() {
     setEnabled(true);
 }
 
+// Empty all squares on the sudoku grid.
+function clear() {
+    for (var row = 0; row < 9; row++) {
+        for (var column = 0; column < 9; column++) {
+            var cell = document.getElementById('box_' + row.toString() + column.toString());
+            cell.value = '';
+            cell.classList.remove('sss-reserved');
+        }
+    }
+    var solveButton = document.getElementsByClassName('sss-solve-button')[0];
+    solveButton.innerHTML = 'Solve';
+
+    var label = document.getElementsByClassName('sss-label')[0];
+    label.classList.remove('sss-red');
+    label.classList.remove('sss-green');
+    label.innerHTML = 'Fill some cells on the grid and then press Solve.';
+}
+
 function setEnabled(setting) {
     for (var row = 0; row < 9; row++) {
         for (var column = 0; column < 9; column++) {
             document.getElementById('box_' + row.toString() + column.toString()).disabled = !setting;
         }
     }
-    var button = document.getElementsByClassName('sss-button')[0];
-    button.disabled = !setting;
+    var solveButton = document.getElementsByClassName('sss-solve-button')[0];
+    var clearButton = document.getElementsByClassName('sss-clear-button')[0];
+    solveButton.disabled = !setting;
+    clearButton.disabled = !setting;
 }
 
 // Display the current state of the sudoku grid on the page.
