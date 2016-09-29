@@ -1,5 +1,9 @@
 (function() {
 
+// Global state variables
+var gClearOnlyUnreserved = false;
+
+// Initial point of entry
 document.addEventListener('DOMContentLoaded', function() {
 
     var gridBox = document.getElementById('stochastic-sudoku-solver');
@@ -62,10 +66,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var clearButton = document.createElement('button');
     clearButton.classList.add('sss-clear-button');
-    clearButton.innerHTML = 'Clear';
+    clearButton.innerHTML = 'Clear Grid';
     clearButton.addEventListener('click', clear);
     gridBox.appendChild(clearButton);
-
 });
 
 // Function called in response to a button click
@@ -77,7 +80,8 @@ function main() {
         grid[row] = [];
         reserved[row] = [];
         for (var column = 0; column < 9; column++) {
-            var cellValue = document.getElementById('box_' + row.toString() + column.toString()).value;
+            var cell = document.getElementById('box_' + row.toString() + column.toString());
+            var cellValue = cell.value;
             if (cellValue == '') {
                 grid[row][column] = 0;
                 reserved[row][column] = false;
@@ -95,8 +99,16 @@ function main() {
     }
 
     showReservedCells(true, reserved);
+    updateDisplay(grid);
+
+    setTimeout(performSimulatedAnnealing(grid, reserved), 1000);
+}
+
+// Simulated annealing and swapping happens here.
+function performSimulatedAnnealing(grid, reserved) {
     initialConfiguration(grid);
-    errors = numContradictions(grid);
+
+    var errors = numContradictions(grid);
     var swaps = 0;
     var dirty = true;
 
@@ -108,7 +120,7 @@ function main() {
     while (true) {
         if (dirty) {
             console.log('SWAPS ERRORS BETTER EQUAL WACCEPTED WREJECTED: ' + swaps.toString() + ' ' + errors.toString() + ' ' + better.toString() + ' ' + equal.toString() + ' ' + waccepted.toString() + ' ' + wrejected.toString());
-            updateDisplay(grid, errors);
+            updateDisplay(grid);
             dirty = false;
 
             if (errors == 0) {
@@ -172,17 +184,21 @@ function clear() {
     for (var row = 0; row < 9; row++) {
         for (var column = 0; column < 9; column++) {
             var cell = document.getElementById('box_' + row.toString() + column.toString());
-            cell.value = '';
-            cell.classList.remove('sss-reserved');
+            if (!(gClearOnlyUnreserved && cell.classList.contains('sss-reserved'))) {
+                cell.value = '';
+                cell.classList.remove('sss-reserved');
+            }
         }
     }
-    var solveButton = document.getElementsByClassName('sss-solve-button')[0];
-    solveButton.innerHTML = 'Solve';
 
     var label = document.getElementsByClassName('sss-label')[0];
     label.classList.remove('sss-red');
     label.classList.remove('sss-green');
     label.innerHTML = 'Fill some cells on the grid and then press Solve.';
+
+    var clearButton = document.getElementsByClassName('sss-clear-button')[0];
+    clearButton.innerHTML = 'Clear Grid';
+    gClearOnlyUnreserved = false;
 }
 
 function setEnabled(setting) {
@@ -195,20 +211,21 @@ function setEnabled(setting) {
     var clearButton = document.getElementsByClassName('sss-clear-button')[0];
     solveButton.disabled = !setting;
     clearButton.disabled = !setting;
+
+    if (setting) {
+        clearButton.innerHTML = 'Clear Solution';
+        gClearOnlyUnreserved = true;
+    }
 }
 
 // Display the current state of the sudoku grid on the page.
-function updateDisplay(grid, errors) {
+function updateDisplay(grid) {
     for (var row = 0; row < 9; row++) {
         for (var column = 0; column < 9; column++) {
             var cell = document.getElementById('box_' + row.toString() + column.toString());
             cell.value = grid[row][column];
         }
     }
-    var label = document.getElementsByClassName('sss-label')[0];
-    label.classList.remove('sss-green');
-    label.classList.remove('sss-red');
-    label.innerHTML = 'Errors on grid: ' + errors.toString();
 }
 
 // Highlight cells filled in by the user with a different color.
@@ -341,7 +358,7 @@ function getTemperature(errors) {
     } else if (errors >= 10) {
         return 0.4;
     }
-    return 0.3;
+    return 0.35;
 }
 
 // Helper function  to draw random integers.
