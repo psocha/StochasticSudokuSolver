@@ -1,7 +1,19 @@
 (function() {
 
-// Global state variables
+// Global state flag indicating whether whole grid should be cleared.
 var gClearOnlyUnreserved = false;
+
+// Global 2D grid.
+var gGrid = [];
+
+// Global 2D grid of reserved squares.
+var gReserved = [];
+
+// Global array indicating whether swaps should be attempted in certain boxes.
+var gFullBoxes = [];
+
+// Global flag indicating whether grid is believed to be solvable.
+var gGridIsSolvable = true;
 
 // Initial point of entry
 document.addEventListener('DOMContentLoaded', function() {
@@ -42,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
             textBox.setAttribute('type', 'number');
             textBox.setAttribute('min', '1');
             textBox.setAttribute('max', '9');
+            textBox.setAttribute('maxlength', 1);
             textBox.classList.add('sss-textbox');
             textBox.id = 'box_' + row.toString() + column.toString();
 
@@ -61,7 +74,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var solveButton = document.createElement('button');
     solveButton.classList.add('sss-solve-button');
     solveButton.innerHTML = 'Solve';
-    solveButton.addEventListener('click', main);
+    solveButton.addEventListener('mousedown', prepareForSimulatedAnnealing);
+    solveButton.addEventListener('mouseup', performSimulatedAnnealing);
     gridBox.appendChild(solveButton);
 
     var clearButton = document.createElement('button');
@@ -72,43 +86,52 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Function called in response to a button click
-function main() {
+function prepareForSimulatedAnnealing() {
     setEnabled(false);
-    var grid = [];
-    var reserved = [];
+    gGrid = [];
+    gReserved = [];
     for (var row = 0; row < 9; row++) {
-        grid[row] = [];
-        reserved[row] = [];
+        gGrid[row] = [];
+        gReserved[row] = [];
         for (var column = 0; column < 9; column++) {
             var cell = document.getElementById('box_' + row.toString() + column.toString());
             var cellValue = cell.value;
             if (cellValue == '') {
-                grid[row][column] = 0;
-                reserved[row][column] = false;
+                gGrid[row][column] = 0;
+                gReserved[row][column] = false;
             } else {
-                grid[row][column] = cellValue;
-                reserved[row][column] = true;
+                gGrid[row][column] = cellValue;
+                gReserved[row][column] = true;
             }
         }
     }
-    var errors = numContradictions(grid);
+    var errors = numContradictions(gGrid);
     if (errors > 0) {
         displayError('This sudoku puzzle is unsolvable.');
         setEnabled(true);
+        gGridIsSolvable = false;
         return;
     }
 
-    showReservedCells(true, reserved);
-    updateDisplay(grid);
+    showReservedCells(true);
+    IdentifyFullBoxes();
+    initialConfiguration();
+    updateDisplay();
 
-    setTimeout(performSimulatedAnnealing(grid, reserved), 1000);
+    var label = document.getElementsByClassName('sss-label')[0];
+    label.classList.remove('sss-red');
+    label.classList.remove('sss-green');
+    label.innerHTML = 'Grid randomly filled in. Swapping in progress. Please wait ...';
 }
 
 // Simulated annealing and swapping happens here.
-function performSimulatedAnnealing(grid, reserved) {
-    initialConfiguration(grid);
-
-    var errors = numContradictions(grid);
+function performSimulatedAnnealing() {
+    if (!gGridIsSolvable) {
+        gGridIsSolvable = true;
+        return;
+    }
+    
+    var errors = numContradictions(gGrid);
     var swaps = 0;
     var dirty = true;
 
@@ -120,7 +143,7 @@ function performSimulatedAnnealing(grid, reserved) {
     while (true) {
         if (dirty) {
             console.log('SWAPS ERRORS BETTER EQUAL WACCEPTED WREJECTED: ' + swaps.toString() + ' ' + errors.toString() + ' ' + better.toString() + ' ' + equal.toString() + ' ' + waccepted.toString() + ' ' + wrejected.toString());
-            updateDisplay(grid);
+            updateDisplay();
             dirty = false;
 
             if (errors == 0) {
@@ -133,7 +156,11 @@ function performSimulatedAnnealing(grid, reserved) {
             }
         }
 
-        var randomBox = getRandomInt(0, 8);
+        var randomBox = -1;
+        while (randomBox < 0 || gFullBoxes[randomBox] == true) {
+            randomBox = getRandomInt(0, 8);
+        }
+
         var cornerRow = Math.floor(randomBox / 3) * 3;
         var cornerColumn = (randomBox % 3) * 3;
 
@@ -141,17 +168,17 @@ function performSimulatedAnnealing(grid, reserved) {
         while (!firstCellSwappable) {
             var randomRow1 = cornerRow + getRandomInt(0, 2);
             var randomCol1 = cornerColumn + getRandomInt(0, 2);
-            if (reserved[randomRow1][randomCol1] == false) firstCellSwappable = true;
+            if (gReserved[randomRow1][randomCol1] == false) firstCellSwappable = true;
         }
 
         var secondCellSwappable = false;
         while (!secondCellSwappable) {
             var randomRow2 = cornerRow + getRandomInt(0, 2);
             var randomCol2 = cornerColumn + getRandomInt(0, 2);
-            if (reserved[randomRow2][randomCol2] == false) secondCellSwappable = true;
+            if (gReserved[randomRow2][randomCol2] == false) secondCellSwappable = true;
         }
 
-        var proposedGrid = copyGrid(grid);
+        var proposedGrid = copyGrid(gGrid);
         var temp = proposedGrid[randomRow1][randomCol1];
         proposedGrid[randomRow1][randomCol1] = proposedGrid[randomRow2][randomCol2];
         proposedGrid[randomRow2][randomCol2] = temp;
@@ -164,7 +191,7 @@ function performSimulatedAnnealing(grid, reserved) {
             equal += 1;
         }
         if (Math.random() < Math.exp(-difference / getTemperature(errors))) {
-            grid = proposedGrid;
+            gGrid = proposedGrid;
             errors = proposedErrors;
             swaps += 1;
             dirty = true;
@@ -201,15 +228,9 @@ function clear() {
     gClearOnlyUnreserved = false;
 }
 
+// Function to enable or disable certain user actions.
 function setEnabled(setting) {
-    for (var row = 0; row < 9; row++) {
-        for (var column = 0; column < 9; column++) {
-            document.getElementById('box_' + row.toString() + column.toString()).disabled = !setting;
-        }
-    }
-    var solveButton = document.getElementsByClassName('sss-solve-button')[0];
     var clearButton = document.getElementsByClassName('sss-clear-button')[0];
-    solveButton.disabled = !setting;
     clearButton.disabled = !setting;
 
     if (setting) {
@@ -218,22 +239,22 @@ function setEnabled(setting) {
     }
 }
 
-// Display the current state of the sudoku grid on the page.
-function updateDisplay(grid) {
+// Display the current state of the sudoku grid gGrid on the page.
+function updateDisplay() {
     for (var row = 0; row < 9; row++) {
         for (var column = 0; column < 9; column++) {
             var cell = document.getElementById('box_' + row.toString() + column.toString());
-            cell.value = grid[row][column];
+            cell.value = gGrid[row][column];
         }
     }
 }
 
 // Highlight cells filled in by the user with a different color.
-function showReservedCells(setting, reserved) {
+function showReservedCells(setting) {
     for (var row = 0; row < 9; row++) {
         for (var column = 0; column < 9; column++) {
             var cell = document.getElementById('box_' + row.toString() + column.toString());
-            if (setting == true && reserved[row][column] == true) {
+            if (setting == true && gReserved[row][column] == true) {
                 cell.classList.add('sss-reserved');
             } else {
                 cell.classList.remove('sss-reserved');
@@ -258,15 +279,39 @@ function displaySuccess(swaps) {
         label.innerHTML = 'Puzzle solved after ' + swaps.toString() + ' swaps.';
 }
 
-// Fill the passed-in grid in a way that satisfies the box property.
-function initialConfiguration(grid) {
+// fills gFullBoxes with the boxes where no swaps should be attempted.
+function IdentifyFullBoxes() {
+    for (var box = 0; box < 9; box++) gFullBoxes[box] = false;
+
+    for (var boxRowIndex = 0; boxRowIndex < 3; boxRowIndex++) {
+        var cornerRow = boxRowIndex * 3;
+        for (var boxColIndex = 0; boxColIndex < 3; boxColIndex++) {
+            var cornerColumn = boxColIndex * 3;
+            var numFilledIn = 0;
+            for (var row = 0; row < 3; row++) {
+                for (var column = 0; column < 3; column++) {
+                    if (gReserved[cornerRow + row][cornerColumn + column]) {
+                        numFilledIn++;
+                    }
+                }
+            }
+
+            if (numFilledIn > 7) {
+                gFullBoxes[3*boxRowIndex + boxColIndex] = true;
+            }
+        }
+    }
+}
+
+// Fill gGrid in a way that satisfies the box property.
+function initialConfiguration() {
     for (var cornerRow = 0; cornerRow < 9; cornerRow += 3) {
         for (var cornerColumn = 0; cornerColumn < 9; cornerColumn += 3) {
             var numbersRemaining = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             for (var row = 0; row < 3; row++) {
                 for (var column = 0; column < 3; column++) {
-                    var val = grid[cornerRow + row][cornerColumn + column];
+                    var val = gGrid[cornerRow + row][cornerColumn + column];
                     if (val > 0) {
                         var index = numbersRemaining.indexOf(parseInt(val));
                         numbersRemaining.splice(index, 1);
@@ -276,9 +321,9 @@ function initialConfiguration(grid) {
 
             for (row = 0; row < 3; row++) {
                 for (column = 0; column < 3; column++) {
-                    val = grid[cornerRow + row][cornerColumn + column];
+                    val = gGrid[cornerRow + row][cornerColumn + column];
                     if (val == 0) {
-                        grid[cornerRow + row][cornerColumn + column] = numbersRemaining[0];
+                        gGrid[cornerRow + row][cornerColumn + column] = numbersRemaining[0];
                         numbersRemaining.splice(0, 1);
                     }
                 }
