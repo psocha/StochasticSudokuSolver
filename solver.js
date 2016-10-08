@@ -100,7 +100,10 @@ function prepareForSimulatedAnnealing() {
                 gGrid[row][column] = 0;
                 gReserved[row][column] = false;
             } else {
-                gGrid[row][column] = cellValue;
+                gGrid[row][column] = cellValue[0];
+                if (cellValue.length > 1) {
+                    cell.value = cellValue[0];
+                }
                 gReserved[row][column] = true;
             }
         }
@@ -113,7 +116,7 @@ function prepareForSimulatedAnnealing() {
         return;
     }
 
-    showReservedCells(true);
+    showReservedCells();
     IdentifyFullBoxes();
     initialConfiguration();
     updateDisplay();
@@ -133,27 +136,15 @@ function performSimulatedAnnealing() {
     
     var errors = numContradictions(gGrid);
     var swaps = 0;
-    var dirty = true;
-
-    var better = 0;
-    var equal = 0;
-    var waccepted = 0;
-    var wrejected = 0;
 
     while (true) {
-        if (dirty) {
-            console.log('SWAPS ERRORS BETTER EQUAL WACCEPTED WREJECTED: ' + swaps.toString() + ' ' + errors.toString() + ' ' + better.toString() + ' ' + equal.toString() + ' ' + waccepted.toString() + ' ' + wrejected.toString());
-            updateDisplay();
-            dirty = false;
-
-            if (errors == 0) {
-                displaySuccess(swaps);
-                break;
-            }
-            if (swaps >= 30000) {
-                displayError('Swap limit reached. Grid still has ' + errors.toString() + ' errors.');
-                break;
-            }
+        if (errors == 0) {
+            displaySuccess(swaps);
+            break;
+        }
+        if (swaps >= 30000) {
+            displayError('Swap limit reached. Grid still has ' + errors.toString() + ' errors.');
+            break;
         }
 
         var randomBox = -1;
@@ -185,25 +176,15 @@ function performSimulatedAnnealing() {
 
         var proposedErrors = numContradictions(proposedGrid);
         var difference = proposedErrors - errors;
-        if (difference < 0) {
-            better += 1;
-        } else if (difference == 0) {
-            equal += 1;
-        }
         if (Math.random() < Math.exp(-difference / getTemperature(errors))) {
             gGrid = proposedGrid;
             errors = proposedErrors;
             swaps += 1;
-            dirty = true;
-            if (difference > 0) {
-                waccepted += 1;
-            }
-        } else {
-            wrejected += 1;
         }
     }
 
     setEnabled(true);
+    updateDisplay();
 }
 
 // Empty all squares on the sudoku grid.
@@ -250,11 +231,11 @@ function updateDisplay() {
 }
 
 // Highlight cells filled in by the user with a different color.
-function showReservedCells(setting) {
+function showReservedCells() {
     for (var row = 0; row < 9; row++) {
         for (var column = 0; column < 9; column++) {
             var cell = document.getElementById('box_' + row.toString() + column.toString());
-            if (setting == true && gReserved[row][column] == true) {
+            if (gReserved[row][column] == true) {
                 cell.classList.add('sss-reserved');
             } else {
                 cell.classList.remove('sss-reserved');
