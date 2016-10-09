@@ -27,8 +27,9 @@
     border-left: 4px black solid !important;
 }
 
+/* Thicker than the other borders because of overlay */
 .sss-thick-right {
-    border-right: 4px black solid !important;
+    border-right: 6px black solid !important;
 }
 
 .sss-textbox {
@@ -42,9 +43,16 @@
     text-align: center;
 }
 
-input[type='number']::-webkit-inner-spin-button,
-input[type='number']::-webkit-outer-spin-button {
+/* Hide up/down arrows in Firefox */
+input[type=number] {
+    -moz-appearance:textfield;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
     margin: 0;
 }
 
