@@ -21,11 +21,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var gridBox = document.getElementById('stochastic-sudoku-solver');
     gridBox.classList.add('sss-widget');
 
-    var header = document.createElement('h1');
-    header.classList.add('sss-header');
-    header.innerHTML = 'Stochastic Sudoku Solver';
-    gridBox.appendChild(header);
-
     var table = document.createElement('table');
     table.classList.add('sss-table');
     table.setAttribute('cellspacing', '0');

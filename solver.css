@@ -1,18 +1,11 @@
-.sss-header {
-    font-family: Arial;
-    text-align: center;
-    margin-left: auto;
-    margin-right: auto;
-}
-
 .sss-table {
     text-align: center;
     margin: 0 auto;
 }
 
 .sss-cell {
-    height: 40px;
-    width: 40px;
+    padding: 0;
+    border-bottom: 0;
 }
 
 .sss-thick-top {
@@ -29,17 +22,19 @@
 
 /* Thicker than the other borders because of overlay */
 .sss-thick-right {
-    border-right: 6px black solid !important;
+    border-right: 4px black solid !important;
 }
 
 .sss-textbox {
     width: 100%;
     height: 100%;
+    margin-bottom: 0;
 
     border: 1px black solid;
+    border-radius: 0;
 
     font-family: Arial;
-    font-size: 24px;
+    font-size: 2em;
     text-align: center;
 }
 
